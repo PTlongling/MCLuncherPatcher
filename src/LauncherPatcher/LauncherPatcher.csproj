@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>LauncherPatcher</RootNamespace>
+    <AssemblyName>LauncherPatcher</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\LauncherPatcher.ico</ApplicationIcon>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+
+    <Product>LauncherPatcher</Product>
+    <AssemblyTitle>LauncherPatcher</AssemblyTitle>
+    <Description>Patch toolkit for HMCL and Plain Craft Launcher 2.</Description>
+    <Authors>Xocio, Skyearth1</Authors>
+    <Version>1.0.0</Version>
+    <Copyright>Copyright © 2026 LauncherPatcher contributors</Copyright>
+  </PropertyGroup>
+
+  <!-- Release: optimized, no debug data, reproducible, single file. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
+    <!-- The PE header already targets CLR 4; no LauncherPatcher.exe.config is needed next to the executable. -->
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- dnlib ships inside LauncherPatcher.exe (see EmbedDependencies), never next to it. -->
+    <PackageReference Include="dnlib" Version="4.4.0" GeneratePathProperty="true" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Logo.png" />
+    <Resource Include="Assets\Avatar.jpg" />
+  </ItemGroup>
+
+  <!--
+    Packs embedded dependencies into one deflate-compressed archive before compilation.
+    EmbeddedAssemblyLoader reads "<name>.dll" entries from it on demand.
+  -->
+  <PropertyGroup>
+    <EmbedStagingDir>$(MSBuildProjectDirectory)\$(BaseIntermediateOutputPath)$(Configuration)\embedded\</EmbedStagingDir>
+    <EmbedArchive>$(MSBuildProjectDirectory)\$(BaseIntermediateOutputPath)$(Configuration)\dependencies.zip</EmbedArchive>
+  </PropertyGroup>
+
+  <Target Name="EmbedDependencies" BeforeTargets="BeforeBuild"
+          Inputs="$(Pkgdnlib)\lib\net45\dnlib.dll" Outputs="$(EmbedArchive)">
+    <RemoveDir Directories="$(EmbedStagingDir)" />
+    <Copy SourceFiles="$(Pkgdnlib)\lib\net45\dnlib.dll" DestinationFolder="$(EmbedStagingDir)" />
+    <ZipDirectory SourceDirectory="$(EmbedStagingDir)" DestinationFile="$(EmbedArchive)" Overwrite="true" />
+  </Target>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(EmbedArchive)" LogicalName="LauncherPatcher.Dependencies.zip" Visible="false" />
+  </ItemGroup>
+
+</Project>
