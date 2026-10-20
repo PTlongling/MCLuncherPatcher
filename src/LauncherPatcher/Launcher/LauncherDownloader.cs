@@ -27,22 +27,23 @@ namespace LauncherPatcher.Launcher
         }
 
         /// <summary>Downloads the official HMCL release into <paramref name="directory"/>.</summary>
+        /// <param name="progress">Receives the percentage 0–100, or −1 when the total size is unknown.</param>
         /// <returns>The path of the downloaded file.</returns>
-        public static async Task<string> DownloadHmclAsync(string directory)
+        public static Task<string> DownloadHmclAsync(string directory, IProgress<double> progress)
         {
             string target = UniquePath(Path.Combine(directory, HmclFileName));
-            await DownloadToFileAsync(HmclUrl, target);
-            return target;
+            return DownloadToFileAsync(HmclUrl, target, progress);
         }
 
         /// <summary>Downloads the official PCL zip and extracts the launcher into <paramref name="directory"/>.</summary>
+        /// <param name="progress">Receives the percentage 0–100, or −1 when the total size is unknown.</param>
         /// <returns>The path of the extracted executable.</returns>
-        public static async Task<string> DownloadPclAsync(string directory)
+        public static async Task<string> DownloadPclAsync(string directory, IProgress<double> progress)
         {
             string tempZip = Path.Combine(directory, "LauncherPatcher-download.tmp");
             try
             {
-                await DownloadToFileAsync(PclUrl, tempZip);
+                await DownloadToFileAsync(PclUrl, tempZip, progress);
 
                 string target = UniquePath(Path.Combine(directory, PclFileName));
                 try
@@ -78,7 +79,7 @@ namespace LauncherPatcher.Launcher
             }
         }
 
-        private static async Task DownloadToFileAsync(string url, string target)
+        private static async Task<string> DownloadToFileAsync(string url, string target, IProgress<double> progress)
         {
             try
             {
@@ -87,12 +88,37 @@ namespace LauncherPatcher.Launcher
                 using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                 {
                     response.EnsureSuccessStatusCode();
+                    long? total = response.Content.Headers.ContentLength;
+                    if (!total.HasValue || total.Value <= 0)
+                        progress?.Report(-1);
+
                     using (var source = await response.Content.ReadAsStreamAsync())
                     using (var file = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
-                        await source.CopyToAsync(file);
+                        var buffer = new byte[81920];
+                        long received = 0;
+                        int lastPercent = -1;
+                        for (;;)
+                        {
+                            int n = await source.ReadAsync(buffer, 0, buffer.Length);
+                            if (n <= 0)
+                                break;
+                            await file.WriteAsync(buffer, 0, n);
+                            received += n;
+
+                            if (total.HasValue && total.Value > 0)
+                            {
+                                int percent = (int)(received * 100 / total.Value);
+                                if (percent != lastPercent)
+                                {
+                                    lastPercent = percent;
+                                    progress?.Report(percent);
+                                }
+                            }
+                        }
                     }
                 }
+                return target;
             }
             catch (LauncherException)
             {

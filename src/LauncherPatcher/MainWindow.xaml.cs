@@ -260,21 +260,41 @@ namespace LauncherPatcher
 
         private async void BtnDownloadHmcl_Click(object sender, RoutedEventArgs e)
         {
-            await DownloadLauncherAsync(dir => LauncherDownloader.DownloadHmclAsync(dir));
+            await DownloadLauncherAsync((dir, progress) => LauncherDownloader.DownloadHmclAsync(dir, progress));
         }
 
         private async void BtnDownloadPcl_Click(object sender, RoutedEventArgs e)
         {
-            await DownloadLauncherAsync(dir => LauncherDownloader.DownloadPclAsync(dir));
+            await DownloadLauncherAsync((dir, progress) => LauncherDownloader.DownloadPclAsync(dir, progress));
         }
 
-        private async Task DownloadLauncherAsync(Func<string, Task<string>> download)
+        private async Task DownloadLauncherAsync(Func<string, IProgress<double>, Task<string>> download)
         {
             SetBusy(true);
             ShowHint(HintKind.Info, () => Text.Get("Status.Downloading"));
+
+            BarDownload.IsIndeterminate = false;
+            BarDownload.Value = 0;
+            LabDownloadPercent.Text = null;
+            PanDownloadProgress.Visibility = Visibility.Visible;
+            var progress = new Progress<double>(percent =>
+            {
+                if (percent < 0)
+                {
+                    BarDownload.IsIndeterminate = true;
+                    LabDownloadPercent.Text = null;
+                }
+                else
+                {
+                    BarDownload.IsIndeterminate = false;
+                    BarDownload.Value = percent;
+                    LabDownloadPercent.Text = ((int)percent) + "%";
+                }
+            });
+
             try
             {
-                string path = await download(AppDomain.CurrentDomain.BaseDirectory);
+                string path = await download(AppDomain.CurrentDomain.BaseDirectory, progress);
                 await SelectLauncherAsync(path);
             }
             catch (LauncherException ex)
@@ -287,6 +307,7 @@ namespace LauncherPatcher
             }
             finally
             {
+                PanDownloadProgress.Visibility = Visibility.Collapsed;
                 SetBusy(false);
             }
         }

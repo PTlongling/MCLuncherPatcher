@@ -238,6 +238,43 @@
         <Setter Property="BorderBrush" Value="{StaticResource BrushRed}" />
     </Style>
 
+    <!-- ======================== Progress bar ======================== -->
+
+    <!-- Flat bar: Brush7 track with a Brush3 fill. Indeterminate mode slides the fill. -->
+    <Style x:Key="PclProgress" TargetType="ProgressBar">
+        <Setter Property="Height" Value="8" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Border x:Name="PART_Track" Background="{StaticResource Brush7}" CornerRadius="4">
+                        <Grid x:Name="PART_Indicator" HorizontalAlignment="Left" Margin="0">
+                            <Border Background="{StaticResource Brush3}" CornerRadius="4" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsIndeterminate" Value="True">
+                            <Setter TargetName="PART_Indicator" Property="Width" Value="60" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="SlideStory">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <ThicknessAnimation Storyboard.TargetName="PART_Indicator"
+                                                            Storyboard.TargetProperty="Margin"
+                                                            From="-60,0,0,0" To="600,0,0,0"
+                                                            Duration="0:0:1.4" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="SlideStory" />
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ======================== Tooltip ======================== -->
 
     <Style TargetType="ToolTip">

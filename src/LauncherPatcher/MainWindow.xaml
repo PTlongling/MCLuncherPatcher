@@ -133,6 +133,7 @@
 
                 <HeaderedContentControl x:Name="PanDownload" Margin="0,15,0,0" Header="{loc:Text Main.Download}"
                                         Style="{StaticResource PclCard}" Visibility="Collapsed">
+                    <StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -157,6 +158,18 @@
                                 Content="{loc:Text Main.DownloadButton}" Style="{StaticResource PclButton}"
                                 Click="BtnDownloadPcl_Click" />
                     </Grid>
+                    <Grid x:Name="PanDownloadProgress" Margin="0,12,0,0" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ProgressBar x:Name="BarDownload" VerticalAlignment="Center"
+                                     Style="{StaticResource PclProgress}" Minimum="0" Maximum="100" />
+                        <TextBlock x:Name="LabDownloadPercent" Grid.Column="1" Margin="10,0,0,0" MinWidth="36"
+                                   FontSize="12" Foreground="{StaticResource BrushGray4}"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    </StackPanel>
                 </HeaderedContentControl>
 
                 <HeaderedContentControl Margin="0,15,0,0" Header="{loc:Text Main.Patches}" Style="{StaticResource PclCard}">
